@@ -9,6 +9,11 @@
 #include <sys/sysctl.h>
 #endif
 
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <cuda_runtime.h>
+
 /******************************************************************************/
 /* Data. */
 
@@ -42,8 +47,8 @@ os_pages_map(void *addr, size_t size, size_t alignment, bool *commit) {
 		*commit = true;
 	}
 
-	void *ret;
-#ifdef _WIN32
+	void *ret = NULL;
+#if defined(_WIN32)
 	/*
 	 * If VirtualAlloc can't allocate at the given address when one is
 	 * given, it fails and returns NULL.
@@ -51,6 +56,16 @@ os_pages_map(void *addr, size_t size, size_t alignment, bool *commit) {
 	ret = VirtualAlloc(addr, size, MEM_RESERVE | (*commit ? MEM_COMMIT : 0),
 	    PAGE_READWRITE);
 #else
+#ifdef USE_CUDA_UM
+        {
+            cudaMallocManaged(&ret, size, cudaMemAttachGlobal);
+            if (addr != NULL && ret != addr) { // very probable...
+                os_pages_unmap(ret, size);
+                ret = NULL;
+            }
+            goto done;
+        }
+#endif
 	/*
 	 * We don't use MAP_FIXED here, because it can cause the *replacement*
 	 * of existing mappings, and we only want to create new mappings.
@@ -72,6 +87,7 @@ os_pages_map(void *addr, size_t size, size_t alignment, bool *commit) {
 		ret = NULL;
 	}
 #endif
+done:
 	assert(ret == NULL || (addr == NULL && ret != addr) || (addr != NULL &&
 	    ret == addr));
 	return ret;
@@ -111,7 +127,9 @@ os_pages_unmap(void *addr, size_t size) {
 	assert(ALIGNMENT_ADDR2BASE(addr, os_page) == addr);
 	assert(ALIGNMENT_CEILING(size, os_page) == size);
 
-#ifdef _WIN32
+#ifdef USE_CUDA_UM
+        if (cudaFree(addr) != cudaSuccess)
+#elif defined(_WIN32)
 	if (VirtualFree(addr, 0, MEM_RELEASE) == 0)
 #else
 	if (munmap(addr, size) == -1)
@@ -176,18 +194,18 @@ pages_map(void *addr, size_t size, size_t alignment, bool *commit) {
 	 * approach works most of the time.
 	 */
 
-	void *ret = os_pages_map(addr, size, os_page, commit);
-	if (ret == NULL || ret == addr) {
-		return ret;
-	}
-	assert(addr == NULL);
-	if (ALIGNMENT_ADDR2OFFSET(ret, alignment) != 0) {
-		os_pages_unmap(ret, size);
-		return pages_map_slow(size, alignment, commit);
-	}
+	/* void *ret = os_pages_map(addr, size, os_page, commit); */
+	/* if (ret == NULL || ret == addr) { */
+	/* 	return ret; */
+	/* } */
+	/* assert(addr == NULL); */
+	/* if (ALIGNMENT_ADDR2OFFSET(ret, alignment) != 0) { */
+	/* 	os_pages_unmap(ret, size); */
+        return pages_map_slow(size, alignment, commit);
+	/* } */
 
-	assert(PAGE_ADDR2BASE(ret) == ret);
-	return ret;
+	/* assert(PAGE_ADDR2BASE(ret) == ret); */
+	/* return ret; */
 }
 
 void

@@ -1155,7 +1155,9 @@ AC_SUBST([enable_tcache])
 
 dnl Indicate whether adjacent virtual memory mappings automatically coalesce
 dnl (and fragment on demand).
-if test "x${maps_coalesce}" = "x1" ; then
+AC_ARG_ENABLE([coalesce],
+  [AS_HELP_STRING([--enable-coalesce], [Automatically regenerate configure output])],[], [])
+if test "x${maps_coalesce}" = "x1" && test "x${enable_coalesce}" = "x1"; then
   AC_DEFINE([JEMALLOC_MAPS_COALESCE], [ ])
 fi
 
