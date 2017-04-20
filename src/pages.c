@@ -194,18 +194,18 @@ pages_map(void *addr, size_t size, size_t alignment, bool *commit) {
 	 * approach works most of the time.
 	 */
 
-	/* void *ret = os_pages_map(addr, size, os_page, commit); */
-	/* if (ret == NULL || ret == addr) { */
-	/* 	return ret; */
-	/* } */
-	/* assert(addr == NULL); */
-	/* if (ALIGNMENT_ADDR2OFFSET(ret, alignment) != 0) { */
-	/* 	os_pages_unmap(ret, size); */
-        return pages_map_slow(size, alignment, commit);
-	/* } */
+	void *ret = os_pages_map(addr, size, os_page, commit);
+	if (ret == NULL || ret == addr) {
+		return ret;
+	}
+	assert(addr == NULL);
+	if (ALIGNMENT_ADDR2OFFSET(ret, alignment) != 0) {
+		os_pages_unmap(ret, size);
+		return pages_map_slow(size, alignment, commit);
+	}
 
-	/* assert(PAGE_ADDR2BASE(ret) == ret); */
-	/* return ret; */
+	assert(PAGE_ADDR2BASE(ret) == ret);
+	return ret;
 }
 
 void
