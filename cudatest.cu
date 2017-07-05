@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cuda_runtime.h>
-void begin_use_um();
 __global__ void add_one(int *a) {
     *a += 1;
 }

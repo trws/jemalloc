@@ -1,14 +1,17 @@
 #!/bin/bash
 ./autogen.sh
-./configure CPPFLAGS='-DUSE_CUDA_UM -I/opt/cudatoolkit-8.0/include/ ' LDFLAGS='-L /opt/cudatoolkit-8.0/lib64/ -lcudart ' --disable-coa
-lesce --with-jemalloc-prefix=je
+./configure --enable-debug --with-jemalloc-prefix=je --disable-coalesce --prefix=$(pwd)/install \
+    CPPFLAGS='-DUSE_CUDA_UM -I/usr/local/cuda-8.0/include/'  \
+    LDFLAGS=" -L/usr/local/cuda/lib64 -lcudart "  
+# ./configure CPPFLAGS='-DUSE_CUDA_UM -I/opt/cudatoolkit-8.0/include/ ' LDFLAGS='-L /opt/cudatoolkit-8.0/lib64/ -lcudart ' --disable-coalesce --with-jemalloc-prefix=je
 
+make -j
+make install
 # build malloc wrapper
-gcc -L $(pwd)/lib wrap_malloc.c -shared -o lib/libwrapmalloc.so -fPIC -l jemalloc
+nvcc wrap_malloc.c -shared -o libwrapmalloc.so -g -std=c++11 -cudart none
 
 # compile cudatest: NOTE! --cudart shared is *required* so that the cuda
 # libraries call the normal system malloc rather than ours
-nvcc -Xlinker --wrap=malloc -Xlinker --wrap=calloc -Xlinker --wrap=realloc -Xlinker --wrap=free -Xlinker \
-     -rpath,$(pwd)/lib -L $(pwd)/lib cudatest.cu -lwrapmalloc --cudart shared -o cudatest
+nvcc -Xlinker -rpath,$(pwd)/install/lib,-rpath,$(pwd) -L $(pwd)/install/lib -L $(pwd) cudatest.cu -lwrapmalloc --cudart shared -o cudatest -ljemalloc
 
 ./cudatest

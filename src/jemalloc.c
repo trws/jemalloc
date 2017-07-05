@@ -9,6 +9,8 @@
 #include "jemalloc/internal/spin.h"
 #include "jemalloc/internal/util.h"
 
+#include <cuda_runtime.h>
+
 /******************************************************************************/
 /* Data. */
 
@@ -2323,10 +2325,10 @@ JEMALLOC_EXPORT void *(*__memalign_hook)(size_t alignment, size_t size) =
 #define ALIAS(je_fn)	__attribute__((alias (#je_fn), used))
 /* To force macro expansion of je_ prefix before stringification. */
 #define PREALIAS(je_fn)  ALIAS(je_fn)
-void	*__libc_malloc(size_t size) PREALIAS(je_malloc);
-void	__libc_free(void* ptr) PREALIAS(je_free);
-void	*__libc_realloc(void* ptr, size_t size) PREALIAS(je_realloc);
-void	*__libc_calloc(size_t n, size_t size) PREALIAS(je_calloc);
+/* void	*__libc_malloc(size_t size) PREALIAS(je_malloc); */
+/* void	__libc_free(void* ptr) PREALIAS(je_free); */
+/* void	*__libc_realloc(void* ptr, size_t size) PREALIAS(je_realloc); */
+/* void	*__libc_calloc(size_t n, size_t size) PREALIAS(je_calloc); */
 void	*__libc_memalign(size_t align, size_t s) PREALIAS(je_memalign);
 void	*__libc_valloc(size_t size) PREALIAS(je_valloc);
 int	__posix_memalign(void** r, size_t a, size_t s)

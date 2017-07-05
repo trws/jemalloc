@@ -37,6 +37,7 @@ static void os_pages_unmap(void *addr, size_t size);
 
 /******************************************************************************/
 
+extern __thread int wrap_in_cudamalloc;
 static void *
 os_pages_map(void *addr, size_t size, size_t alignment, bool *commit) {
 	assert(ALIGNMENT_ADDR2BASE(addr, os_page) == addr);
@@ -58,7 +59,9 @@ os_pages_map(void *addr, size_t size, size_t alignment, bool *commit) {
 #else
 #ifdef USE_CUDA_UM
         {
+            wrap_in_cudamalloc = 1;
             cudaMallocManaged(&ret, size, cudaMemAttachGlobal);
+            wrap_in_cudamalloc = 0;
             if (addr != NULL && ret != addr) { // very probable...
                 os_pages_unmap(ret, size);
                 ret = NULL;
@@ -194,18 +197,18 @@ pages_map(void *addr, size_t size, size_t alignment, bool *commit) {
 	 * approach works most of the time.
 	 */
 
-	void *ret = os_pages_map(addr, size, os_page, commit);
-	if (ret == NULL || ret == addr) {
-		return ret;
-	}
-	assert(addr == NULL);
-	if (ALIGNMENT_ADDR2OFFSET(ret, alignment) != 0) {
-		os_pages_unmap(ret, size);
+	/* void *ret = os_pages_map(addr, size, os_page, commit); */
+	/* if (ret == NULL || ret == addr) { */
+	/* 	return ret; */
+	/* } */
+	/* assert(addr == NULL); */
+	/* if (ALIGNMENT_ADDR2OFFSET(ret, alignment) != 0) { */
+	/* 	os_pages_unmap(ret, size); */
 		return pages_map_slow(size, alignment, commit);
-	}
-
-	assert(PAGE_ADDR2BASE(ret) == ret);
-	return ret;
+	/* } */
+        /*  */
+	/* assert(PAGE_ADDR2BASE(ret) == ret); */
+	/* return ret; */
 }
 
 void
